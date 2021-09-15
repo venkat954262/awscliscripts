@@ -1,0 +1,57 @@
+###################################################-------STOP SCRIPT-----###############################################
+#/bin/bash
+echo "script started"
+date
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+status=$(/usr/local/bin/aws ec2 stop-instances --instance-ids i-0057a882216295a06 --output text | grep -w CURRENTSTATE | awk '{print $3}')
+echo $status
+
+aws elbv2 deregister-targets  --target-group-arn arn:aws:elasticloadbalancing:ap-south-1:634432921715:targetgroup/API-CAROUSEL-TG/ef47bbf122b2fc60  --targets Id=i-0057a882216295a06
+
+sleep 1m
+echo $status
+
+echo `aws ec2 describe-instances  --output=text --instance-ids i-0057a882216295a06 | awk -v date="$(date +"%Y-%m-%d %r")" 'BEGIN{printf "PP-PORTAL-03-v2.35\n\t"} /INSTANCES/ {print date "\t" $14" \t " $9} /STATE/ {print "\t" $3}'| awk '{printf(" %s", $0)}'` >> /home/apparao_it/awslogs/aws-log-`date +%Y-%m-%d`.txt
+
+if [ $? -eq 0 ]
+then
+/bin/mail -s "AWS CAROUSAL-API SERVER STOPPED" it.support@apalya.com<<EOF
+AWS CAROUSAL-API 10.10.20.254  INSTANCE ID i-0057a882216295a06 stopped
+EOF
+else
+/bin/mail -s it.support@apalya.com<<EOF
+"AWS CAROUSAL-API 10.10.20.254  INSTANCE i-0057a882216295a06 Stop FAILED"
+EOF
+fi
+
+echo "Script Ended "
+date
+echo "##########################"
+
+###################################################-------START SCRIPT-----###############################################
+#/bin/bash
+date
+echo "script started"
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+status=$(/usr/local/bin/aws ec2 start-instances --instance-ids i-0057a882216295a06  --output text | grep -w CURRENTSTATE | awk '{print $3}')
+echo $status
+sleep 5m
+
+aws elbv2 register-targets  --target-group-arn arn:aws:elasticloadbalancing:ap-south-1:634432921715:targetgroup/API-CAROUSEL-TG/ef47bbf122b2fc60  --targets Id=i-0057a882216295a06
+
+echo `aws ec2 describe-instances  --output=text --instance-ids i-0057a882216295a06 | awk -v date="$(date +"%Y-%m-%d %r")" 'BEGIN{printf "PP-CST -02\n \t"} /INSTANCES/ {print date "\t" $14" \t " $9} /STATE/ {print "\t" $3}'| awk '{printf(" %s", $0)}'` >> /home/apparao_it/awslogs/aws-log-`date +%Y-%m-%d`.txt
+
+if [ $? -eq 0 ]
+then
+/bin/mail -s "CAROUSAL-API-10.10.20.254 stared sun prod " it.support@apalya.com<<EOF
+AWS CAROUSAL-API 10.10.20.254  INSTANCE ID i-0057a882216295a06  started .
+EOF
+else
+/bin/mail -s it.support@apalya.com,<<EOF
+"AWS CAROUSAL-API 10.10.20.254  INSTANCE ID i-0057a882216295a06 Start FAILED"
+EOF
+fi
+date
+echo "Script Ended "
