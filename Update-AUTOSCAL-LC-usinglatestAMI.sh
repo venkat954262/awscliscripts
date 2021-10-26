@@ -47,13 +47,16 @@ echo "Ami created with Ami-Id = $image_id"
 
 echo "Creating Lanch Configuration.....!"
 
+snap1_id=$(/usr/local/bin/aws ec2 describe-images --image-ids $image_id | grep "SnapshotId" | awk 'FNR == 1 {print $2}'| xargs | tr -d ',')
+snap2_id=$(/usr/local/bin/aws ec2 describe-images --image-ids $image_id | grep "SnapshotId" | awk 'FNR == 2 {print $2}'| xargs | tr -d ',')
+
 aws autoscaling create-launch-configuration \
 --launch-configuration-name VfPlay-API_$ver-LC-U16_$day \
 --image-id $image_id \
 --instance-type c5.2xlarge \
---iam-instance-profile api-instance-role \
 --instance-monitoring Enabled=true \
---block-device-mappings '[{"DeviceName":"/dev/sdb","Ebs":{"VolumeSize":120,"VolumeType":"gp2","DeleteOnTermination":true}}]'
+--block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"SnapshotId":$snap1_id,"VolumeSize":30,"VolumeType":"gp2","DeleteOnTermination":true}},
+                          {"DeviceName":"/dev/sdb","Ebs":{"SnapshotId":$snap2_id,"VolumeSize":120,"VolumeType":"gp2","DeleteOnTermination":true}}]' \
 --security-groups sg-63ee6208 \
 --key-name vodaott-aws \
 
