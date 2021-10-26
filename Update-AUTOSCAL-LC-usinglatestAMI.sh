@@ -12,21 +12,38 @@
 
 #!/bin/bash
 
+
+day=$(date +"%d%m%Y-%H%M%p")
+
 echo -n "what is version? "
 
 read ver
 
-echo "Latest version is $ver"
+echo "Latest version is VfPlay-API_$ver-LC-U16_$day"
 
-day=$(date +"%d%m%Y-%H%M%p")
+echo "Creating AMI...!"
 
 image_id=$(aws ec2 create-image --instance-id i-029ecc92c10692983 --name "VfPlay-API_$ver-LC-U16_$day" --description "VfPlay-API_$ver-LC-U16_$day" --no-reboot --query ImageId --output text)
 
-echo "Ami creating with Ami-Id = $image_id"
+aws ec2 create-tags --resources $image_id --tags Key=Name,Value=VfPlay-API_$ver-LC-U16_$day
 
-aws ec2 create-tags --resources $image_id --tags Key=Name,Value=TestImage-$day-LC
+while true; do
+AmiState=$(/usr/local/bin/aws ec2 describe-images --image-ids $image_id  | grep State | awk '{print $2}' | xargs | tr -d ',')
+if [ "$AmiState" == "available" ]; then
 
-sleep 5m
+	break
+
+	else
+
+	echo "" &> /dev/null
+
+fi
+
+sleep 30
+
+done
+
+echo "Ami created with Ami-Id = $image_id"
 
 echo "Creating Lanch Configuration.....!"
 
@@ -36,7 +53,12 @@ aws autoscaling create-launch-configuration \
 --instance-type c5.2xlarge \
 --iam-instance-profile api-instance-role \
 --instance-monitoring Enabled=true \
---block-device-mappings '[{"DeviceName":"/dev/sdb","Ebs":{"VolumeSize":120,"VolumeType":"gp2","DeleteOnTermination": true}}]'
+--block-device-mappings '[{"DeviceName":"/dev/sdb","Ebs":{"VolumeSize":120,"VolumeType":"gp2","DeleteOnTermination":true}}]'
 --security-groups sg-63ee6208 \
 --key-name vodaott-aws \
+
+echo "Lanch Configuration created --update in ASG now"
+
+
+
 
