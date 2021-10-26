@@ -12,23 +12,31 @@
 
 #!/bin/bash
 
-image_id=$(aws ec2 create-image --instance-id i-02240db58d7a3f905 --name "MyTestAMI" --description "An AMI for my Testserver" --no-reboot --query ImageId --output text)
+echo -n "what is version? "
 
-echo "created image id is $image_id"
+read ver
 
-day=$(date +"%d%m%Y")
+echo "Latest version is $ver"
+
+day=$(date +"%d%m%Y-%H%M%p")
+
+image_id=$(aws ec2 create-image --instance-id i-029ecc92c10692983 --name "VfPlay-API_$ver-LC-U16_$day" --description "VfPlay-API_$ver-LC-U16_$day" --no-reboot --query ImageId --output text)
+
+echo "Ami creating with Ami-Id = $image_id"
 
 aws ec2 create-tags --resources $image_id --tags Key=Name,Value=TestImage-$day-LC
 
+sleep 5m
 
-sleep 7m
-
+echo "Creating Lanch Configuration.....!"
 
 aws autoscaling create-launch-configuration \
---launch-configuration-name TestLanch-$day \
---key-name TeskKey \
+--launch-configuration-name VfPlay-API_$ver-LC-U16_$day \
 --image-id $image_id \
---security-groups sg-eb2af88e \
---instance-type t2.macro \
+--instance-type c5.2xlarge \
+--iam-instance-profile api-instance-role \
 --instance-monitoring Enabled=true \
---iam-instance-profile my-autoscaling-role
+--block-device-mappings '[{"DeviceName":"/dev/sdb","Ebs":{"VolumeSize":120,"VolumeType":"gp2","DeleteOnTermination": true}}]'
+--security-groups sg-63ee6208 \
+--key-name vodaott-aws \
+
