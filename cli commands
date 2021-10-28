@@ -1,0 +1,10 @@
+RDS
+Reader add cmd
+/usr/local/bin/aws rds create-db-instance --db-instance-identifier vfplay-auroradb-r01   --db-cluster-identifier vfplay-auroradb-prod  --engine aurora-mysql --db-instance-class db.r5.2xlarge  --availability-zone ap-south-1a --db-parameter-group-name prodcution-auroradb-pg
+
+Reader Delete cmd
+aws rds delete-db-instance --db-instance-identifier vfplay-auroradb-r01
+
+Autoscaling Desired Capacity increase
+aws autoscaling set-desired-capacity --auto-scaling-group-name API_VfPlay_ASG  --desired-capacity 5
+
